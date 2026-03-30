@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Joe's Final Handover</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0a0a1a;
+  margin: 0; padding: 0;
+  width: 100vw; height: 100vh;
+  overflow: hidden;
+  font-family: 'Press Start 2P', cursive;
+}
+#wrap {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform-origin: center center;
+  border: 6px solid #facc15;
+  box-shadow: 0 0 0 3px #000, 0 0 40px #facc1566;
+  image-rendering: pixelated;
+  overflow: hidden;
+  /* transform set by JS — always includes translate(-50%,-50%) so it stays centred */
+}
+canvas { display: block; touch-action: none; }
+
+/* ── OVERLAYS ── */
+.ui {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: rgba(5,5,20,0.92);
+  text-align: center; padding: 20px;
+  z-index: 20;
+  overflow: hidden;
+}
+.hidden { display: none !important; }
+
+/* Base font sizes — these are in px inside the scaled wrapper, so they
+   visually scale up with the CSS transform automatically */
+h1 { font-size: 22px; color: #facc15; line-height: 1.5; margin-bottom: 10px;
+     text-shadow: 3px 3px 0 #000; }
+h2 { font-size: 15px; color: #4ade80; margin-bottom: 14px;
+     text-shadow: 2px 2px 0 #000; }
+.sub { font-size: 9px; color: #94a3b8; line-height: 2; margin-bottom: 12px; }
+.hint { font-size: 8px; color: #94a3b8; margin-top: 8px; line-height: 2.4; }
+
+.btn {
+  font-family: 'Press Start 2P', cursive;
+  padding: 12px 24px; font-size: 11px;
+  background: #16a34a; color: #fff;
+  border: 4px solid #14532d;
+  box-shadow: 0 5px 0 #14532d;
+  cursor: pointer; transition: all 0.08s;
+  margin: 6px;
+}
+.btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #14532d; }
+.btn.red { background: #dc2626; border-color: #7f1d1d; box-shadow: 0 5px 0 #7f1d1d; }
+.btn.red:active { box-shadow: 0 2px 0 #7f1d1d; }
+
+.fail-box {
+  background: #1e0000; border: 2px solid #dc2626;
+  color: #fca5a5; font-size: 9px;
+  padding: 12px 20px; margin-bottom: 16px;
+  line-height: 1.8;
+}
+
+/* ── HUD ── */
+#hud {
+  position: absolute; top: 10px; left: 10px; right: 10px;
+  display: flex; justify-content: space-between;
+  font-size: 9px; color: #fff;
+  text-shadow: 2px 2px 0 #000;
+  pointer-events: none; z-index: 10;
+}
+#hud span { background: rgba(0,0,0,0.5); padding: 5px 8px; }
+
+/* ── SCREEN SHAKE ── */
+@keyframes shake {
+  0%,100%{transform:translate(-50%,-50%) scale(var(--scale,1)) translate(0,0)}
+  20%{transform:translate(-50%,-50%) scale(var(--scale,1)) translate(-6px,3px)}
+  40%{transform:translate(-50%,-50%) scale(var(--scale,1)) translate(6px,-3px)}
+  60%{transform:translate(-50%,-50%) scale(var(--scale,1)) translate(-4px,2px)}
+  80%{transform:translate(-50%,-50%) scale(var(--scale,1)) translate(4px,-2px)}
+}
+.shake { animation: shake 0.35s ease; }
+
+/* ── TOUCH CONTROLS ── */
+#touch-controls {
+  position: absolute; bottom: 10px; left: 0; right: 0;
+  display: none; justify-content: space-between;
+  padding: 0 10px; z-index: 15; pointer-events: none;
+}
+#touch-controls .tc-btn {
+  pointer-events: all;
+  width: 64px; height: 64px;
+  background: rgba(255,255,255,0.15);
+  border: 3px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Press Start 2P', cursive; font-size: 1.2rem;
+  color: #fff; user-select: none;
+  -webkit-user-select: none;
+}
+#touch-controls .left-btns { display: flex; gap: 8px; }
+@media (pointer: coarse) { #touch-controls { display: flex; } }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c"></canvas>
+
+  <!-- START -->
+  <div id="scr-start" class="ui" style="justify-content:center; gap:0; padding:14px 20px 10px 20px;">
+    <h1 style="font-size:22px; margin-bottom:6px; margin-top:28px; white-space:nowrap;">JOE'S FINAL HANDOVER</h1>
+    <p class="sub" style="margin-bottom:8px; font-size:9px;">Help Joe archive his projects<br>before he heads off to his new role.</p>
+
+    <!-- ENEMY SHOWCASE -->
+    <div style="background:rgba(0,0,0,0.5); border:2px solid #334155; padding:10px 14px; margin-bottom:8px; width:100%; max-width:720px;">
+      <p style="font-size:16px; color:#facc15; margin-bottom:8px; letter-spacing:1px;">WATCH OUT FOR...</p>
+      <canvas id="enemy-showcase" width="720" height="120" style="display:block; margin:0 auto; image-rendering:pixelated; width:100%;"></canvas>
+      <div style="display:flex; justify-content:space-around; margin-top:8px;">
+        <div style="text-align:center; width:33%;">
+          <p style="font-size:9px; color:#a78bfa; margin:0; line-height:2.2;">SCOPE CREEP<br><span style="color:#94a3b8; font-size:8px;">8-LEGGED TERROR!</span></p>
+        </div>
+        <div style="text-align:center; width:33%;">
+          <p style="font-size:9px; color:#60a5fa; margin:0; line-height:2.2;">UNREAD EMAIL<br><span style="color:#94a3b8; font-size:8px;">DODGE IT!</span></p>
+        </div>
+        <div style="text-align:center; width:33%;">
+          <p style="font-size:9px; color:#fbbf24; margin:0; line-height:2.2;">OVERDUE TIMESHEET<br><span style="color:#94a3b8; font-size:8px;">OUTRUN IT!</span></p>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn" id="btn-start" style="margin-bottom:4px; padding:12px 28px; font-size:11px;">▶ BEGIN ARCHIVING</button>
+    <p class="hint" style="margin-top:4px; font-size:8px; line-height:2.4;">← → MOVE &nbsp;|&nbsp; ↑ / SPACE JUMP &nbsp;|&nbsp; ↓ DUCK<br>Collect all disks to open the EXIT</p>
+  </div>
+
+  <!-- INTERMISSION -->
+  <div id="scr-inter" class="ui hidden">
+    <h2 id="inter-title">LEVEL CLEARED!</h2>
+    <div style="background:rgba(0,0,0,0.4); border:2px solid #334155; padding:12px 20px; margin:10px 0; max-width:480px; width:100%;">
+      <p id="inter-flavour" style="font-size:0.5rem; color:#e2e8f0; line-height:2.2; margin:0;"></p>
+    </div>
+    <p id="inter-text" style="font-size:0.48rem; color:#64748b; margin:8px 0;"></p>
+    <button class="btn" id="btn-next">NEXT LEVEL ▶</button>
+  </div>
+
+  <!-- WIN -->
+  <div id="scr-win" class="ui hidden" style="gap:6px;">
+    <h1 style="color:#4ade80; font-size:22px; margin-bottom:4px;">MISSION COMPLETE!</h1>
+    <canvas id="win-canvas" width="320" height="120" style="image-rendering:pixelated; margin:4px 0;"></canvas>
+    <p style="font-size:11px; color:#facc15; line-height:2; margin:0;">All disks archived!</p>
+    <p id="win-score" style="font-size:9px; color:#4ade80; margin:2px 0;"></p>
+    <div style="background:rgba(255,204,21,0.1); border:2px solid #facc15; padding:10px 18px; margin:6px 0; max-width:560px; width:100%;">
+      <p style="font-size:9px; color:#fff; line-height:2.4; margin:0;">
+        Good luck in your new role, Joe! 🎉<br>
+        Thanks for everything — you'll be greatly missed!
+      </p>
+    </div>
+    <button class="btn" onclick="location.reload()">PLAY AGAIN</button>
+  </div>
+
+  <!-- LOSE -->
+  <div id="scr-lose" class="ui hidden">
+    <h1 style="color:#ef4444; font-size:20px;">HANDOVER<br>FAILED</h1>
+    <div class="fail-box" id="fail-msg">THE SCOPE CREEP GOT YOU!</div>
+    <p id="lose-lives" style="font-size:0.5rem; color:#fca5a5; margin-bottom:14px;"></p>
+    <button class="btn red" id="btn-retry">TRY AGAIN</button>
+  </div>
+
+  <div id="hud" class="hidden">
+    <!-- HUD is drawn on canvas; this div just serves as a marker for show/hide -->
+  </div>
+
+  <div id="touch-controls">
+    <div class="left-btns">
+      <div class="tc-btn" id="tc-left">◀</div>
+      <div class="tc-btn" id="tc-right">▶</div>
+    </div>
+    <div class="tc-btn" id="tc-jump">▲</div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════
+   AUDIO ENGINE  – structured chiptune
+   Intro (8 bars) → Verse (8 bars) → Chorus (8 bars) → repeat
+   ════════════════════════════════════════════ */
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+let musicInterval = null;
+
+const NF = {
+  C3:130.81, D3:146.83, E3:164.81, F3:174.61, G3:196.00, A3:220.00, B3:246.94,
+  C4:261.63, D4:293.66, E4:329.63, F4:349.23, G4:392.00, A4:440.00, B4:493.88,
+  Bb4:466.16,
+  C5:523.25, D5:587.33, E5:659.25, F5:698.46, G5:783.99, A5:880.00, B5:987.77,
+  C6:1046.5, D6:1174.66, E6:1318.51
+};
+
+function tone(freq, type, dur, vol, when) {
+  if (!freq) return;
+  when = when || AC.currentTime;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, when);
+  g.gain.setValueAtTime(vol, when);
+  g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  o.connect(g); g.connect(AC.destination);
+  o.start(when); o.stop(when + dur + 0.01);
+}
+
+function drum(type, vol, when) {
+  when = when || AC.currentTime;
+  if (type === 'K') {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(110, when);
+    o.frequency.exponentialRampToValueAtTime(40, when + 0.07);
+    g.gain.setValueAtTime(vol, when);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + 0.09);
+    o.connect(g); g.connect(AC.destination);
+    o.start(when); o.stop(when + 0.1);
+  } else if (type === 'S') {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(180, when);
+    g.gain.setValueAtTime(vol * 0.35, when);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + 0.05);
+    o.connect(g); g.connect(AC.destination);
+    o.start(when); o.stop(when + 0.06);
+  } else if (type === 'H') {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(600, when);
+    g.gain.setValueAtTime(vol * 0.15, when);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + 0.025);
+    o.connect(g); g.connect(AC.destination);
+    o.start(when); o.stop(when + 0.03);
+  }
+}
+
+// Step duration: 125ms = 480 BPM eighth notes at a comfortable 120 BPM feel
+// Each "bar" = 8 steps. Structure: 8 bars intro + 8 bars verse + 8 bars chorus = 192 steps
+
+// ── INTRO: gentle arpeggio figure, melody enters bar 3 ──
+const INTRO_LEAD = [
+// Bar 1-2: rising arpeggio motif
+  'C5', 0, 'E5', 0, 'G5', 0, 'E5', 0,   'C5', 0, 'E5', 0, 'G5', 'A5','G5', 0,
+// Bar 3-4: melody phrase
+  'E5','E5', 0, 'D5', 'C5','D5','E5', 0,  'C5', 0,  0,  0,   0,   0,   0,   0,
+// Bar 5-6: repeat with variation
+  'G5', 0, 'F5', 0, 'E5', 0, 'D5', 0,   'E5','F5','E5','D5','C5', 0,  0,   0,
+// Bar 7-8: build to verse
+  'G5','A5','G5','F5','E5','D5','C5', 0,  'D5','E5','F5','G5','A5','B5','C6', 0,
+];
+const INTRO_BASS = [
+  'C3', 0, 'G3', 0, 'C3', 0, 'G3', 0,   'C3', 0, 'G3', 0, 'C3', 0, 'G3', 0,
+  'F3', 0, 'C3', 0, 'F3', 0, 'C3', 0,   'G3', 0, 'D3', 0, 'G3', 0, 'D3', 0,
+  'C3', 0, 'G3', 0, 'C3', 0, 'G3', 0,   'A3', 0, 'E3', 0, 'A3', 0, 'E3', 0,
+  'F3', 0, 'C3', 0, 'G3', 0, 'D3', 0,   'C3', 0, 'G3', 0, 'C3', 0, 'G3', 0,
+];
+
+// ── VERSE: flowing melody with a clear 2-bar motif that repeats ──
+const VERSE_LEAD = [
+// Bar 1-2: motif A
+  'E5', 0, 'G5','E5', 'C5', 0, 'D5', 0,  'E5','D5','C5', 0, 'D5', 0, 'E5', 0,
+// Bar 3-4: motif A answer
+  'F5', 0, 'A5','F5', 'D5', 0, 'E5', 0,  'F5','E5','D5', 0, 'C5', 0,  0,   0,
+// Bar 5-6: motif B (steps up)
+  'G5', 0, 'F5', 0, 'E5', 0, 'D5', 0,   'C5','D5','E5','F5','G5', 0, 'A5', 0,
+// Bar 7-8: motif B resolves
+  'G5','F5','E5','D5','C5','B4','A4', 0,  'G4', 0, 'C5', 0, 'E5', 0, 'G5', 0,
+];
+const VERSE_HARM = [
+  'C5', 0, 'E5', 0, 'G4', 0, 'B4', 0,   'C5', 0, 'G4', 0, 'B4', 0, 'C5', 0,
+  'D5', 0, 'F5', 0, 'A4', 0, 'C5', 0,   'D5', 0, 'A4', 0, 'F4', 0,  0,   0,
+  'E5', 0, 'D5', 0, 'C5', 0, 'B4', 0,   'G4', 0, 'B4', 0, 'C5', 0, 'E5', 0,
+  'E5','D5','C5','B4','A4','G4','F4', 0,  'E4', 0, 'G4', 0, 'C5', 0, 'E5', 0,
+];
+const VERSE_BASS = [
+  'C3', 0, 'G3', 0, 'C3', 0, 'G3', 0,   'C3', 0, 'G3', 0, 'C3', 0, 'E3', 0,
+  'F3', 0, 'C3', 0, 'F3', 0, 'A3', 0,   'G3', 0, 'D3', 0, 'G3', 0, 'D3', 0,
+  'C3', 0, 'G3', 0, 'A3', 0, 'E3', 0,   'F3', 0, 'C3', 0, 'G3', 0, 'E3', 0,
+  'C3', 0, 'G3', 0, 'F3', 0, 'C3', 0,   'G3', 0, 'D3', 0, 'C3', 0, 'G3', 0,
+];
+
+// ── CHORUS: bigger, brighter, higher octave, more energy ──
+const CHORUS_LEAD = [
+// Bar 1-2: triumphant opening
+  'C6', 0, 'B5', 0, 'A5', 0, 'G5', 0,   'A5', 0, 'G5', 0, 'F5', 0, 'E5', 0,
+// Bar 3-4
+  'F5', 0, 'E5', 0, 'D5', 0, 'C5', 0,   'D5','E5','F5','G5','A5', 0, 'B5', 0,
+// Bar 5-6: climax phrase
+  'C6','B5','A5','G5','F5','E5','D5','C5', 'D5', 0, 'F5', 0, 'A5', 0, 'C6', 0,
+// Bar 7-8: wind-down back to intro feel
+  'B5', 0, 'A5', 0, 'G5', 0, 'F5', 0,   'E5','D5','C5', 0,  0,   0,  0,   0,
+];
+const CHORUS_HARM = [
+  'E5', 0, 'G5', 0, 'C5', 0, 'E5', 0,   'F5', 0, 'E5', 0, 'D5', 0, 'C5', 0,
+  'A4', 0, 'C5', 0, 'F4', 0, 'A4', 0,   'B4','C5','D5','E5','F5', 0, 'G5', 0,
+  'E5','D5','C5','B4','A4','G4','F4','E4', 'F4', 0, 'A4', 0, 'C5', 0, 'E5', 0,
+  'G5', 0, 'F5', 0, 'E5', 0, 'D5', 0,   'C5', 0,  0,   0,  0,   0,  0,   0,
+];
+const CHORUS_BASS = [
+  'C3', 0, 'G3', 0, 'A3', 0, 'E3', 0,   'F3', 0, 'C3', 0, 'G3', 0, 'D3', 0,
+  'F3', 0, 'C3', 0, 'F3', 0, 'C3', 0,   'G3', 0, 'D3', 0, 'G3', 0, 'B3', 0,
+  'C3', 0, 'G3', 0, 'A3', 0, 'E3', 0,   'F3', 0, 'A3', 0, 'C3', 0, 'G3', 0,
+  'G3', 0, 'D3', 0, 'C3', 0, 'G3', 0,   'C3', 0,  0,   0,  0,   0,  0,   0,
+];
+
+// Drum pattern: same 8-bar loop throughout (K=kick, S=snare, H=hihat, 0=rest)
+const DRUM_BAR = ['K','H','S','H', 'K','H','S','H'];
+// Build 64-step drum loop
+const DRUM64 = [];
+for (let b = 0; b < 8; b++) DRUM64.push(...DRUM_BAR);
+
+// Concatenate into full 192-step sequence
+const FULL_LEAD = [...INTRO_LEAD, ...VERSE_LEAD, ...CHORUS_LEAD];
+const FULL_HARM = [...Array(64).fill(0), ...VERSE_HARM, ...CHORUS_HARM];
+const FULL_BASS = [...INTRO_BASS, ...VERSE_BASS, ...CHORUS_BASS];
+const FULL_DRUM = [...DRUM64, ...DRUM64, ...DRUM64];
+
+let musicStep = 0;
+function startMusic() {
+  stopMusic();
+  musicStep = 0;
+  musicInterval = setInterval(() => {
+    const i = musicStep % FULL_LEAD.length;
+    if (FULL_LEAD[i]) tone(NF[FULL_LEAD[i]], 'square',   0.11, 0.022);
+    if (FULL_HARM[i]) tone(NF[FULL_HARM[i]], 'square',   0.13, 0.013);
+    if (FULL_BASS[i]) tone(NF[FULL_BASS[i]], 'triangle', 0.19, 0.036);
+    const d = FULL_DRUM[i];
+    if (d) drum(d, d === 'K' ? 0.16 : 0.10);
+    musicStep++;
+  }, 125);
+}
+function stopMusic() {
+  if (musicInterval) clearInterval(musicInterval);
+}
+
+const sfxJump     = () => { tone(220,'triangle',0.05,0.06); tone(330,'triangle',0.1,0.04); };
+const sfxCoin     = () => { tone(800,'sine',0.06,0.07); setTimeout(()=>tone(1200,'sine',0.12,0.07),50); };
+const sfxDie      = () => { for(let i=0;i<4;i++) setTimeout(()=>tone(80-i*10,'sawtooth',0.12,0.12),i*80); };
+const sfxHit      = () => { tone(150,'sawtooth',0.08,0.15); tone(100,'sawtooth',0.15,0.1); };
+const sfxWin      = () => {
+  [523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,'sine',0.25,0.1),i*120));
+};
+const sfxLevelEnd = () => {
+  [523,659,784,880,1047].forEach((f,i)=>setTimeout(()=>tone(f,'square',0.18,0.08),i*100));
+};
+const sfxFootstep = () => { tone(60,'triangle',0.04,0.04); };
+const sfxEmailNear = () => { tone(440,'sine',0.06,0.03); tone(550,'sine',0.08,0.02); };
+const sfxClockNear = () => { tone(800,'square',0.05,0.03); };
+
+/* ════════════════════════════════════════════
+   PIXEL SPRITES
+   ════════════════════════════════════════════ */
+function drawJoe(ctx, x, y, frame, vx, onGround, ducking) {
+  const s = 4;
+
+  if (ducking) {
+    // ── DUCK POSE: squash Joe down, knees bent ──
+    x = Math.round(x); const baseY = Math.round(y) - 6;
+    // Scuttle cycle — only when moving
+    const scuttle = vx !== 0 ? Math.sin(frame * 0.4) : 0;
+
+    // Hair
+    ctx.fillStyle = '#c8a048'; ctx.fillRect(x+1*s, baseY-s, 6*s, s);
+    ctx.fillStyle = '#d4ac50'; ctx.fillRect(x+2*s, baseY-2*s, 5*s, 2*s);
+    // Face
+    ctx.fillStyle = '#f5c8a0'; ctx.fillRect(x+2*s, baseY, 4*s, 3*s);
+    // Glasses
+    ctx.fillStyle = '#1a0f00';
+    ctx.fillRect(x+1*s, baseY+0.5*s, 3*s, 2*s);
+    ctx.fillRect(x+4.5*s, baseY+0.5*s, 3*s, 2*s);
+    ctx.fillStyle = 'rgba(200,230,255,0.18)';
+    ctx.fillRect(x+1*s+2, baseY+0.5*s+2, 3*s-4, 2*s-4);
+    ctx.fillRect(x+4.5*s+2, baseY+0.5*s+2, 3*s-4, 2*s-4);
+    ctx.fillStyle = '#1a0f00'; ctx.fillRect(x+4*s, baseY+s, s, 2);
+    // Crouched body
+    ctx.fillStyle = '#1c1c2a'; ctx.fillRect(x+0*s, baseY+3*s, 8*s, 4*s);
+    ctx.fillStyle = '#d0d4dc'; ctx.fillRect(x+3*s, baseY+3*s, 2*s, 3*s);
+
+    // Bent knees — rock slightly with scuttle
+    const lKneeX = Math.round(scuttle * 3);  // left knee shifts forward/back
+    const rKneeX = Math.round(-scuttle * 3); // right knee opposite
+    ctx.fillStyle = '#18181f';
+    ctx.fillRect(x + s + lKneeX,   baseY+7*s, 2*s, 2*s); // left thigh
+    ctx.fillRect(x + 5*s + rKneeX, baseY+7*s, 2*s, 2*s); // right thigh
+
+    // Shins — alternate up/down for scuttling crawl
+    const lLift = Math.round(Math.max(0,  scuttle) * 4); // left shin lifts when scuttle > 0
+    const rLift = Math.round(Math.max(0, -scuttle) * 4); // right shin lifts when scuttle < 0
+    ctx.fillRect(x + 0*s + lKneeX, baseY+8*s - lLift, 2*s, s + lLift);
+    ctx.fillRect(x + 6*s + rKneeX, baseY+8*s - rLift, 2*s, s + rLift);
+
+    // Shoes — shuffle forward/back with each step
+    const lShoeX = Math.round(scuttle * 4);
+    const rShoeX = Math.round(-scuttle * 4);
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(x + 0*s + lShoeX + lKneeX, baseY+9*s, 3*s, s);
+    ctx.fillRect(x + 5*s + rShoeX + rKneeX, baseY+9*s, 3*s, s);
+    return;
+  }
+
+  const walkCycle = onGround && vx !== 0 ? Math.sin(frame * 0.35) : 0;
+  const bobY = onGround && vx !== 0 ? Math.abs(Math.sin(frame * 0.35)) * 2 : 0;
+  const armSwing = onGround && vx !== 0 ? Math.sin(frame * 0.35) * 5 : 0;
+
+  x = Math.round(x); y = Math.round(y + bobY);
+
+  // ── HAIR (dark blonde / warm brown, styled upward like photo) ──
+  ctx.fillStyle = '#c8a048';
+  ctx.fillRect(x + 1*s, y - 1*s, 6*s, 2*s);  // sides
+  ctx.fillStyle = '#d4ac50';
+  ctx.fillRect(x + 2*s, y - 3*s, 5*s, 3*s);  // top volume
+  ctx.fillStyle = '#b8902e';
+  ctx.fillRect(x + 2*s, y - 4*s, 4*s, 2*s);  // crown
+  ctx.fillStyle = '#c8a048';
+  ctx.fillRect(x + 0*s, y - 1*s, 2*s, 2*s);  // left side
+  ctx.fillRect(x + 6*s, y - 1*s, 2*s, 2*s);  // right side
+
+  // ── FACE (warm skin) ──
+  ctx.fillStyle = '#f5c8a0';
+  ctx.fillRect(x + 2*s, y + 0*s, 4*s, 4*s);
+  // Cheek blush (like photo – big warm smile)
+  ctx.fillStyle = 'rgba(220,140,100,0.35)';
+  ctx.fillRect(x + 2*s, y + 2*s, 2*s, s);
+  ctx.fillRect(x + 4*s, y + 2*s, 2*s, s);
+
+  // ── EYES (visible through clear lenses) ──
+  ctx.fillStyle = '#5a3a1a';
+  ctx.fillRect(x + 2*s, y + s,   s, s);   // left eye
+  ctx.fillRect(x + 5*s, y + s,   s, s);   // right eye
+  // Eye shine
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(x + 2*s, y + s,   2, 2);
+  ctx.fillRect(x + 5*s, y + s,   2, 2);
+
+  // ── GLASSES: chunky dark frames (match photo – square, prominent) ──
+  // Outer frame rects – dark tortoiseshell
+  ctx.fillStyle = '#1a0f00';
+  // Left lens outer frame (3px thick border feel)
+  ctx.fillRect(x + 1*s,     y + 0.5*s, 3*s,   2.5*s);  // left lens box
+  ctx.fillRect(x + 4.5*s,   y + 0.5*s, 3*s,   2.5*s);  // right lens box
+  // Clear lens interior (skin colour shows through)
+  ctx.fillStyle = 'rgba(200,230,255,0.18)';
+  ctx.fillRect(x + 1*s+2,   y + 0.5*s+2, 3*s-4, 2.5*s-4);
+  ctx.fillRect(x + 4.5*s+2, y + 0.5*s+2, 3*s-4, 2.5*s-4);
+  // Bridge between lenses
+  ctx.fillStyle = '#1a0f00';
+  ctx.fillRect(x + 4*s, y + s, s, 2);
+  // Temple arms
+  ctx.fillRect(x + 0*s, y + s, s, 2);        // left arm
+  ctx.fillRect(x + 7.5*s, y + s, s, 2);      // right arm
+
+  // ── SUIT JACKET (dark charcoal, like photo) ──
+  ctx.fillStyle = '#1c1c2a';
+  ctx.fillRect(x + 1*s, y + 4*s, 6*s, 6*s);
+  // Lapels
+  ctx.fillStyle = '#2a2a3a';
+  ctx.fillRect(x + 1*s, y + 4*s, 2*s, 3*s);
+  ctx.fillRect(x + 5*s, y + 4*s, 2*s, 3*s);
+
+  // ── SHIRT (light grey/white visible in V) ──
+  ctx.fillStyle = '#d0d4dc';
+  ctx.fillRect(x + 3*s, y + 4*s, 2*s, 5*s);
+
+  // ── ARMS (swing when walking, raise when jumping) ──
+  ctx.fillStyle = '#1c1c2a';
+  if (!onGround) {
+    // Both arms raised up in a jump pose
+    const jumpRaise = 16;
+    // Left arm — raised up and out
+    ctx.fillRect(x - s,   y + 4*s - jumpRaise, s, 4*s);
+    ctx.fillStyle = '#f5c8a0';
+    ctx.fillRect(x - s,   y + 4*s - jumpRaise - 2*s, s, 2*s); // hand above arm
+    // Right arm — raised up and out
+    ctx.fillStyle = '#1c1c2a';
+    ctx.fillRect(x + 8*s, y + 4*s - jumpRaise, s, 4*s);
+    ctx.fillStyle = '#f5c8a0';
+    ctx.fillRect(x + 8*s, y + 4*s - jumpRaise - 2*s, s, 2*s);
+  } else {
+    // Left arm — swings with walk cycle
+    const lArmY = armSwing;
+    ctx.fillRect(x - s,     y + 4*s + lArmY, s, 4*s);
+    ctx.fillStyle = '#f5c8a0';
+    ctx.fillRect(x - s,     y + 7*s + lArmY, s, 2*s);
+    // Right arm — swings opposite
+    ctx.fillStyle = '#1c1c2a';
+    const rArmY = -armSwing;
+    ctx.fillRect(x + 8*s,   y + 4*s + rArmY, s, 4*s);
+    ctx.fillStyle = '#f5c8a0';
+    ctx.fillRect(x + 8*s,   y + 7*s + rArmY, s, 2*s);
+  }
+  // ── TROUSERS ──
+  ctx.fillStyle = '#18181f';
+  const lOff = walkCycle * 6, rOff = -walkCycle * 6;
+  ctx.fillRect(x + 1.5*s, y + 10*s, 2*s, 3*s + lOff);
+  ctx.fillRect(x + 4.5*s, y + 10*s, 2*s, 3*s + rOff);
+
+  // ── SHOES ──
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(x + 1*s,   y + 13*s + lOff, 3*s, s);
+  ctx.fillRect(x + 4*s,   y + 13*s + rOff, 3*s, s);
+}
+
+function drawDisk(ctx, x, y, frame) {
+  const s = 3;
+  const hover = Math.sin(frame * 0.08) * 5;
+  const yy = Math.round(y + hover);
+  // Body
+  ctx.fillStyle = '#1d4ed8';
+  ctx.fillRect(x, yy, 8*s, 8*s);
+  // Label
+  ctx.fillStyle = '#eff6ff';
+  ctx.fillRect(x + s, yy + s, 5*s, 3*s);
+  ctx.fillStyle = '#93c5fd';
+  ctx.fillRect(x + s, yy + s + 4, 5*s, 1);
+  ctx.fillRect(x + s, yy + s + 7, 4*s, 1);
+  // Shutter
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillRect(x + 2*s, yy + 5*s, 4*s, 2*s);
+  ctx.fillStyle = '#475569';
+  ctx.fillRect(x + 3*s, yy + 5*s, s, 2*s);
+  // Corner cut
+  ctx.fillStyle = '#1e3a8a';
+  ctx.fillRect(x + 6*s, yy, s, s);
+  ctx.fillStyle = '#1d4ed8';
+  ctx.fillRect(x + 7*s, yy, s, s);
+  ctx.fillRect(x + 6*s, yy + s, s, s);
+}
+
+function drawEnemy(ctx, x, y, type, frame) {
+  const s = 3;
+  if (type === 'email') {
+    // Flying envelope — draw with slight tilt based on sin wave
+    const tilt = Math.sin(frame * 0.045) * 0.18; // gentle rock
+    ctx.save();
+    ctx.translate(x + 18, y + 12);
+    ctx.rotate(tilt);
+    // Body
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(-18, -12, 36, 24);
+    ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2;
+    ctx.strokeRect(-18, -12, 36, 24);
+    // Flap (top triangle, animates open/close)
+    const flap = Math.sin(frame * 0.18) * 5;
+    ctx.fillStyle = '#dbeafe';
+    ctx.beginPath(); ctx.moveTo(-18, -12 + flap); ctx.lineTo(0, 0 + flap); ctx.lineTo(18, -12 + flap);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#93c5fd'; ctx.lineWidth = 1; ctx.stroke();
+    // Red X
+    ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-10, 2); ctx.lineTo(2, 10); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(2, 2); ctx.lineTo(-10, 10); ctx.stroke();
+    // Wing lines (suggests flying)
+    ctx.strokeStyle = 'rgba(147,197,253,0.6)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-18, -12); ctx.lineTo(-18, 12); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(18, -12); ctx.lineTo(18, 12); ctx.stroke();
+    ctx.restore();
+
+  } else if (type === 'timesheet') {
+    // ── CLOCK ──
+    drawClock(ctx, x, y, frame);
+
+  } else {
+    // ── SPIDER (scope creep) ──
+    drawSpider(ctx, x, y, frame);
+  }
+}
+
+function drawClock(ctx, cx, cy, frame) {
+  // Clock face centred at cx+16, cy+16. Radius ~14px.
+  const ox = cx + 16, oy = cy + 16, r = 14;
+
+  // Wobble side to side as it patrols
+  const wobble = Math.sin(frame * 0.14) * 2;
+
+  ctx.save();
+  ctx.translate(wobble, 0);
+
+  // ── ALARM BELLS on top ──
+  ctx.fillStyle = '#dc2626';
+  ctx.beginPath(); ctx.arc(ox - 8, oy - r + 1, 5, Math.PI, 0); ctx.fill();
+  ctx.beginPath(); ctx.arc(ox + 8, oy - r + 1, 5, Math.PI, 0); ctx.fill();
+  // Bell hammers
+  ctx.fillStyle = '#991b1b';
+  ctx.fillRect(ox - 10, oy - r - 2, 4, 3);
+  ctx.fillRect(ox + 6,  oy - r - 2, 4, 3);
+
+  // ── CLOCK BODY ──
+  ctx.fillStyle = '#fef3c7';
+  ctx.beginPath(); ctx.arc(ox, oy, r, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#92400e'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(ox, oy, r, 0, Math.PI*2); ctx.stroke();
+
+  // ── FACE DETAIL: hour markers ──
+  ctx.fillStyle = '#92400e';
+  for (let h = 0; h < 12; h++) {
+    const a = (h / 12) * Math.PI * 2 - Math.PI / 2;
+    const inner = h % 3 === 0 ? r - 5 : r - 3;
+    ctx.beginPath();
+    ctx.moveTo(ox + Math.cos(a) * inner, oy + Math.sin(a) * inner);
+    ctx.lineTo(ox + Math.cos(a) * (r - 1), oy + Math.sin(a) * (r - 1));
+    ctx.lineWidth = h % 3 === 0 ? 2 : 1;
+    ctx.stroke();
+  }
+
+  // ── HANDS (tick each second based on frame) ──
+  const totalSecs = frame / 60 * 10; // slightly fast for drama
+  // Hour hand
+  const hourA = (totalSecs / 12) * Math.PI * 2 - Math.PI / 2;
+  ctx.strokeStyle = '#1c0a00'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(ox, oy);
+  ctx.lineTo(ox + Math.cos(hourA) * (r * 0.5), oy + Math.sin(hourA) * (r * 0.5));
+  ctx.stroke();
+  // Minute hand
+  const minA = (totalSecs) * Math.PI * 2 - Math.PI / 2;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(ox, oy);
+  ctx.lineTo(ox + Math.cos(minA) * (r * 0.75), oy + Math.sin(minA) * (r * 0.75));
+  ctx.stroke();
+  // Centre pin
+  ctx.fillStyle = '#dc2626';
+  ctx.beginPath(); ctx.arc(ox, oy, 2, 0, Math.PI*2); ctx.fill();
+
+  // ── LEGS ── (it's running at you!)
+  ctx.strokeStyle = '#92400e'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  const legSwing = Math.sin(frame * 0.2) * 6;
+  // Left leg
+  ctx.beginPath(); ctx.moveTo(ox - 8, oy + r); ctx.lineTo(ox - 12, oy + r + 8 + legSwing); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox - 12, oy + r + 8 + legSwing); ctx.lineTo(ox - 10, oy + r + 14 + legSwing); ctx.stroke();
+  // Right leg
+  ctx.beginPath(); ctx.moveTo(ox + 8, oy + r); ctx.lineTo(ox + 12, oy + r + 8 - legSwing); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox + 12, oy + r + 8 - legSwing); ctx.lineTo(ox + 10, oy + r + 14 - legSwing); ctx.stroke();
+
+  // ── ANGRY EYES ──
+  ctx.fillStyle = '#dc2626';
+  ctx.beginPath(); ctx.arc(ox - 5, oy - 3, 2.5, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(ox + 5, oy - 3, 2.5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(ox - 5, oy - 3, 1, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(ox + 5, oy - 3, 1, 0, Math.PI*2); ctx.fill();
+  // Angry mouth
+  ctx.strokeStyle = '#7c2d12'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(ox, oy + 5, 4, 0.2, Math.PI - 0.2); ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawSpider(ctx, cx, cy, frame) {
+  // cx/cy = top-left. Sprite is ~40px wide, ~28px tall.
+  // Body sits near top; all legs reach down to floor at cy+28.
+  const t = frame;
+  const groundY = cy + 28;          // where leg tips touch
+  const bx = cx + 20;               // body centre x
+  const bodyTop = cy + 4;
+  const by = bodyTop + 7;           // cephalothorax centre y  (~cy+11)
+  const abdY = by + 10;             // abdomen centre y        (~cy+21)
+
+  // ── LEGS – 4 each side, tips walk on groundY ──
+  // Each leg: shoulder -> knee (out & slightly up) -> tip (down to groundY)
+  // Leg tips are evenly spread along the body width, alternating lift
+  ctx.strokeStyle = '#2d1050'; ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+
+  // Left legs: tips at groundY, spread outward to the left
+  const leftTipsX  = [bx-22, bx-18, bx-14, bx-9];
+  const rightTipsX = [bx+22, bx+18, bx+14, bx+9];
+  const kneeOffX_L = [-14, -12, -10, -7];
+  const kneeOffX_R = [ 14,  12,  10,  7];
+
+  for (let i = 0; i < 4; i++) {
+    // Alternate pairs lift in opposite phase for walking crawl
+    const lift = Math.sin(t * 0.2 + i * Math.PI / 2) * 4;
+    const tipY  = groundY - Math.max(0, lift);  // only lift, never sink below ground
+    const kneeY = by + 2;                        // knee stays roughly level with body
+
+    // Left
+    ctx.beginPath();
+    ctx.moveTo(bx - 4, by);
+    ctx.lineTo(bx + kneeOffX_L[i], kneeY);
+    ctx.lineTo(leftTipsX[i], tipY);
+    ctx.stroke();
+
+    // Right
+    ctx.beginPath();
+    ctx.moveTo(bx + 4, by);
+    ctx.lineTo(bx + kneeOffX_R[i], kneeY);
+    ctx.lineTo(rightTipsX[i], tipY);
+    ctx.stroke();
+  }
+
+  // ── ABDOMEN (rear, larger) ──
+  const abdPulse = Math.sin(t * 0.1) * 1;
+  ctx.fillStyle = '#4c1d95';
+  ctx.beginPath(); ctx.ellipse(bx - 1, abdY, 9 + abdPulse, 8 + abdPulse, 0.1, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#6d28d9';
+  ctx.beginPath(); ctx.ellipse(bx - 1, abdY, 5, 5, 0.1, 0, Math.PI*2); ctx.fill();
+  // Red hourglass marking
+  ctx.fillStyle = '#dc2626';
+  ctx.beginPath(); ctx.ellipse(bx - 1, abdY, 2, 3, 0, 0, Math.PI*2); ctx.fill();
+
+  // ── CEPHALOTHORAX (head, front, smaller) ──
+  ctx.fillStyle = '#3b0764';
+  ctx.beginPath(); ctx.ellipse(bx + 3, by, 6, 5, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#5b21b6';
+  ctx.beginPath(); ctx.ellipse(bx + 3, by, 4, 3.5, 0, 0, Math.PI*2); ctx.fill();
+
+  // ── 8 EYES (two rows on cephalothorax front) ──
+  ctx.fillStyle = '#fef08a';
+  [[-1,0],[1,0],[3,0],[5,0],  [0,-2],[2,-2],[4,-2]].forEach(([ex, ey]) => {
+    ctx.beginPath(); ctx.arc(bx + ex, by + ey, 1.1, 0, Math.PI*2); ctx.fill();
+  });
+
+  // ── FANGS ──
+  ctx.fillStyle = '#dc2626';
+  ctx.fillRect(bx + 2, by + 4, 2, 4);
+  ctx.fillRect(bx + 5, by + 4, 2, 4);
+}
+
+function drawPortal(ctx, x, y, w, h, frame, locked) {
+  // Glowing door frame
+  const glow = Math.sin(frame * 0.1) * 0.3 + 0.7;
+  ctx.fillStyle = locked ? '#374151' : `rgba(34,197,94,${glow})`;
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = locked ? '#111' : '#064e3b';
+  ctx.fillRect(x + 6, y + 6, w - 12, h - 6);
+  // Sign above
+  ctx.fillStyle = locked ? '#6b7280' : '#16a34a';
+  ctx.fillRect(x + 5, y - 30, w - 10, 22);
+  ctx.fillStyle = '#fff';
+  ctx.font = "7px 'Press Start 2P'";
+  ctx.textAlign = 'center';
+  ctx.fillText(locked ? 'LOCKED' : 'EXIT', x + w/2, y - 14);
+  if (!locked) {
+    // Large pixel arrow — drawn shapes, not text
+    const ax = x + w/2 + Math.sin(frame * 0.15) * 5;
+    const ay = y + h/2;
+    const pulse = Math.sin(frame * 0.1) * 0.4 + 0.6;
+    ctx.fillStyle = `rgba(250,204,21,${pulse})`;
+    // Arrow body (horizontal bar)
+    ctx.fillRect(ax - 14, ay - 3, 20, 6);
+    // Arrowhead (triangle pointing right)
+    ctx.beginPath();
+    ctx.moveTo(ax + 6,  ay - 9);
+    ctx.lineTo(ax + 18, ay);
+    ctx.lineTo(ax + 6,  ay + 9);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+/* ════════════════════════════════════════════
+   PARALLAX BACKGROUND LAYERS
+   All bg items anchored to a floor baseline – nothing floats.
+   ════════════════════════════════════════════ */
+function drawBG(ctx, lvlIdx, camX, W, H) {
+
+  if (lvlIdx === 0) {
+    // ── OPEN PLAN OFFICE ──
+    // Sky/wall colour
+    ctx.fillStyle = '#dde3ed';
+    ctx.fillRect(0, 0, W, H);
+
+    // Far back wall (slowest parallax)
+    ctx.fillStyle = '#cdd5e3';
+    ctx.fillRect(0, 0, W, H * 0.55);
+
+    // Ceiling strip lights
+    ctx.fillStyle = 'rgba(255,255,230,0.6)';
+    for (let i = 0; i < 8; i++) {
+      const lx = ((i * 120 - camX * 0.05) % (W + 120)) - 10;
+      ctx.fillRect(lx, 0, 80, 5);
+    }
+
+    // Windows – fixed to back wall, all same height
+    const winY = 25, winH = 80, winW = 70;
+    for (let i = 0; i < 8; i++) {
+      const wx = ((i * 130 - camX * 0.12) % (W + 130)) - 20;
+      ctx.fillStyle = '#bfdbfe'; ctx.fillRect(wx, winY, winW, winH);
+      ctx.fillStyle = '#93c5fd'; ctx.fillRect(wx+2, winY+2, 30, winH-4);
+      ctx.fillStyle = '#7dd3fc'; ctx.fillRect(wx+36, winY+2, 30, winH-4);
+      ctx.fillStyle = '#d0daea'; ctx.fillRect(wx, winY+winH/2-2, winW, 4); // horizontal bar
+      ctx.fillRect(wx+33, winY, 4, winH);  // vertical bar
+    }
+
+    // Floor baseline for desks
+    const FLOOR = H - 60;
+    ctx.fillStyle = '#b0bec5';
+    ctx.fillRect(0, FLOOR, W, 4); // skirting board
+
+    // Desks – all anchored so legs touch FLOOR
+    for (let i = 0; i < 8; i++) {
+      const dx = ((i * 210 - camX * 0.28) % (W + 210)) - 60;
+      const deskTop = FLOOR - 55;
+      // Monitor (sits on desk)
+      ctx.fillStyle = '#334155'; ctx.fillRect(dx+45, deskTop-35, 44, 32);
+      ctx.fillStyle = '#0ea5e9'; ctx.fillRect(dx+48, deskTop-32, 38, 26);
+      ctx.fillStyle = '#475569'; ctx.fillRect(dx+62, deskTop-3, 10, 6); // neck
+      // Desk surface
+      ctx.fillStyle = '#b0bec5'; ctx.fillRect(dx, deskTop, 140, 10);
+      // Legs touch floor
+      ctx.fillStyle = '#78909c';
+      ctx.fillRect(dx+6,   deskTop+10, 12, FLOOR-(deskTop+10));
+      ctx.fillRect(dx+122, deskTop+10, 12, FLOOR-(deskTop+10));
+    }
+
+  } else if (lvlIdx === 1) {
+    // ── BOARDROOM ──
+    ctx.fillStyle = '#1c1209';
+    ctx.fillRect(0, 0, W, H);
+
+    // Wood panelling strips on wall
+    ctx.fillStyle = '#2d1a0a';
+    for (let i = 0; i < 14; i++) {
+      const px = ((i * 90 - camX * 0.08) % (W + 90)) - 20;
+      ctx.fillRect(px, 0, 5, H * 0.72);
+    }
+
+    // Dado rail
+    ctx.fillStyle = '#5c3a1e'; ctx.fillRect(0, H*0.42, W, 3);
+    ctx.fillStyle = '#3d2510'; ctx.fillRect(0, H*0.42+3, W, 8);
+
+    // Portrait frames – all at same height on wall
+    const frameY = 22, frameH = 105, frameW = 68;
+    for (let i = 0; i < 6; i++) {
+      const fx = ((i * 195 + 20 - camX * 0.12) % (W + 195)) - 50;
+      ctx.fillStyle = '#b45309'; ctx.fillRect(fx, frameY, frameW, frameH);
+      ctx.fillStyle = '#78350f'; ctx.fillRect(fx+5, frameY+5, frameW-10, frameH-10);
+      // Gold trim
+      ctx.fillStyle = '#fde68a';
+      ctx.fillRect(fx+2, frameY+2, 4, frameH-4);
+      ctx.fillRect(fx+frameW-6, frameY+2, 4, frameH-4);
+      ctx.fillRect(fx+2, frameY+2, frameW-4, 4);
+      ctx.fillRect(fx+2, frameY+frameH-6, frameW-4, 4);
+      // Portrait silhouette
+      ctx.fillStyle = '#451a03';
+      ctx.fillRect(fx+18, frameY+55, 30, 42);
+      ctx.beginPath(); ctx.arc(fx+33, frameY+48, 13, 0, Math.PI*2); ctx.fill();
+    }
+
+    // Floor baseline
+    const BFLOOR = H - 55;
+    ctx.fillStyle = '#2a1005'; ctx.fillRect(0, BFLOOR, W, H-BFLOOR);
+    ctx.fillStyle = '#3d1a08'; ctx.fillRect(0, BFLOOR, W, 4); // floor edge
+
+    // Long boardroom table – sits on floor
+    const tableTop = BFLOOR - 40;
+    ctx.fillStyle = '#3b1a08'; ctx.fillRect(-60, tableTop, W+120, 40);
+    ctx.fillStyle = '#5c3011'; ctx.fillRect(-60, tableTop, W+120, 5); // table top edge
+    ctx.fillStyle = '#2a1005';
+    for (let i = 0; i < 7; i++) {
+      ctx.fillRect(i*130-20, tableTop+5, 16, 35); // table legs
+    }
+    // Chairs along table – spaced, on floor
+    for (let i = 0; i < 8; i++) {
+      const chx = ((i * 150 + 40 - camX * 0.18) % (W + 150)) - 40;
+      ctx.fillStyle = '#4a2010';
+      ctx.fillRect(chx, tableTop-40, 32, 40); // chairback
+      ctx.fillRect(chx, tableTop, 32, 8);     // seat
+      ctx.fillStyle = '#3a1a08';
+      ctx.fillRect(chx+4, tableTop+8, 6, 32); // left leg
+      ctx.fillRect(chx+22, tableTop+8, 6, 32); // right leg
+    }
+
+  } else {
+    // ── LOBBY ──
+    ctx.fillStyle = '#f5f0e8';
+    ctx.fillRect(0, 0, W, H);
+
+    // Ceiling band
+    ctx.fillStyle = '#e2d9c8';
+    ctx.fillRect(0, 0, W, 45);
+    // Coffered ceiling panels
+    for (let i = 0; i < 7; i++) {
+      const cx2 = ((i * 115 - camX * 0.05) % (W + 115)) - 10;
+      ctx.fillStyle = '#d0c4ae'; ctx.fillRect(cx2, 6, 85, 30);
+      ctx.fillStyle = '#c4b89e'; ctx.fillRect(cx2+4, 10, 77, 22);
+    }
+
+    // Chandeliers – hang from ceiling, fixed y
+    for (let i = 0; i < 4; i++) {
+      const chx = ((i * 260 + 100 - camX * 0.07) % (W + 260)) - 50;
+      ctx.fillStyle = '#a88030'; ctx.fillRect(chx+20, 0, 4, 22);   // chain
+      ctx.fillStyle = '#d4a820'; ctx.fillRect(chx+4, 22, 36, 6);    // top ring
+      ctx.fillStyle = '#e8c040';
+      for (let j = 0; j < 5; j++) ctx.fillRect(chx+4+j*7, 28, 5, 12); // candles
+      ctx.fillStyle = 'rgba(255,220,80,0.09)';
+      ctx.beginPath(); ctx.arc(chx+22, 42, 55, 0, Math.PI*2); ctx.fill();
+    }
+
+    // Marble columns – full height, anchored top to ceiling band, base to floor
+    const COL_FLOOR = H - 18;
+    for (let i = 0; i < 7; i++) {
+      const px = ((i * 170 - camX * 0.28) % (W + 170)) - 35;
+      // Shaft
+      ctx.fillStyle = '#eae0ce'; ctx.fillRect(px, 45, 22, COL_FLOOR - 45);
+      // Fluting
+      ctx.fillStyle = '#d8cdb5';
+      for (let f = 0; f < 3; f++) ctx.fillRect(px+4+f*6, 45, 3, COL_FLOOR-45);
+      // Capital
+      ctx.fillStyle = '#c8baa0'; ctx.fillRect(px-7, 42, 36, 8);
+      ctx.fillStyle = '#b8a888'; ctx.fillRect(px-9, 38, 40, 6);
+      // Base plinth
+      ctx.fillStyle = '#c8baa0'; ctx.fillRect(px-5, COL_FLOOR-12, 32, 8);
+      ctx.fillStyle = '#b8a888'; ctx.fillRect(px-7, COL_FLOOR-4, 36, 4);
+    }
+
+    // Marble floor – anchored at bottom
+    const MFLOOR = H - 18;
+    ctx.fillStyle = '#e8dcc8'; ctx.fillRect(0, MFLOOR, W, H-MFLOOR);
+    ctx.fillStyle = '#d8ccb4'; ctx.fillRect(0, MFLOOR, W, 3);
+    // Floor tile grid
+    ctx.strokeStyle = 'rgba(160,140,100,0.3)'; ctx.lineWidth = 1;
+    for (let row = 0; row < 3; row++) {
+      const fy = MFLOOR + row * 6;
+      ctx.beginPath(); ctx.moveTo(0, fy); ctx.lineTo(W, fy); ctx.stroke();
+    }
+    for (let col = 0; col < 14; col++) {
+      const fx2 = ((col * 75 - camX * 0.35) % (W + 75));
+      ctx.beginPath(); ctx.moveTo(fx2, MFLOOR); ctx.lineTo(fx2, H); ctx.stroke();
+    }
+
+    // Potted indoor plants – base sits ON the marble floor
+    // Spaced well apart to avoid crowding (every 280px)
+    for (let i = 0; i < 5; i++) {
+      const plx = ((i * 280 + 60 - camX * 0.2) % (W + 280)) - 50;
+      const potBase = MFLOOR;   // pot bottom on floor
+      const potH = 22, potW = 24;
+      const potTop = potBase - potH;
+      // Pot
+      ctx.fillStyle = '#b85c30'; ctx.fillRect(plx - potW/2, potTop, potW, potH);
+      ctx.fillStyle = '#9a4a22'; ctx.fillRect(plx - potW/2 - 3, potTop - 5, potW+6, 7); // rim
+      ctx.fillStyle = '#3d2008'; ctx.fillRect(plx - potW/2+2, potTop, potW-4, 5); // soil
+      // Stem
+      ctx.fillStyle = '#166534'; ctx.fillRect(plx-2, potTop-38, 4, 38);
+      // Leaves – ellipses fanning out, centred, not going below pot
+      ctx.fillStyle = '#16a34a';
+      ctx.beginPath(); ctx.ellipse(plx-14, potTop-28, 12, 18, -0.5, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(plx+14, potTop-32, 12, 18,  0.5, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(plx,    potTop-46, 10, 16,  0.0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#14532d';
+      ctx.beginPath(); ctx.ellipse(plx-14, potTop-28, 5, 10, -0.5, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(plx+14, potTop-32, 5, 10,  0.5, 0, Math.PI*2); ctx.fill();
+    }
+
+    // Reception desk – sits on floor, one every ~800px so no crowding
+    for (let i = 0; i < 5; i++) {
+      const rdx = ((i * 800 + 180 - camX * 0.16) % (W + 800)) - 120;
+      const deskH = 58, deskW = 160;
+      const deskTop = MFLOOR - deskH;
+      ctx.fillStyle = '#c8a86a'; ctx.fillRect(rdx, deskTop, deskW, deskH);
+      ctx.fillStyle = '#b89458'; ctx.fillRect(rdx, deskTop, deskW, 5); // top surface
+      ctx.fillStyle = '#7a5c14'; ctx.fillRect(rdx+8, deskTop+8, deskW-16, deskH-8); // front panel
+      // Monitor on desk
+      ctx.fillStyle = '#1e293b'; ctx.fillRect(rdx+55, deskTop-36, 52, 34);
+      ctx.fillStyle = '#0ea5e9'; ctx.fillRect(rdx+59, deskTop-33, 44, 28);
+      ctx.fillStyle = '#334155'; ctx.fillRect(rdx+76, deskTop-2, 10, 5); // neck
+    }
+  }
+}
+
+/* ════════════════════════════════════════════
+   LEVEL DATA
+   ════════════════════════════════════════════ */
+const WORLD_W = 3400;
+
+// Each enemy has platX/platW so it's clamped strictly to its platform
+const LEVELS = [
+  {
+    name: "Main Office",
+    floorLabel: "Main Office",
+    bg: '#dde3ed', ground: '#334155', accent: '#64748b',
+    diskCount: 7,
+    crawlSections: [
+      {x:1200, w:240, floorY:340},
+    ],
+    // floorSpikes: 3 spikes on starting platform to teach player to jump over spikes
+    floorSpikes: [ {x:280, platY:340} ],
+    platforms: [
+      {x:0,    y:340, w:600,  h:60},
+      {x:680,  y:260, w:220,  h:20},
+      {x:980,  y:340, w:700,  h:60},
+      {x:1760, y:240, w:180,  h:20},
+      {x:2020, y:340, w:500,  h:60},
+      {x:2600, y:280, w:200,  h:20},
+      {x:2870, y:340, w:530,  h:60},
+    ],
+    enemies: [
+      {type:'creep', x:2950, speed:1.24, platX:2870, platW:530},
+      {type:'email', x:2100, speed:1.8, platX:2020, platW:500},
+    ]
+  },
+  {
+    name: "Meeting Room",
+    floorLabel: "Meeting Room",
+    bg: '#1c1209', ground: '#7c5c2a', accent: '#d4a017',
+    diskCount: 9,
+    crawlSections: [
+      {x:1900, w:200, floorY:340},  // on the wide ground mid platform (x:1840, w:400)
+    ],
+    floorSpikes: [ {x:3100, platY:340} ],  // on final ground platform {x:2930,w:470}, 170px from right edge
+    platforms: [
+      {x:0,    y:340, w:360,  h:60},
+      {x:440,  y:285, w:200,  h:20},
+      {x:720,  y:230, w:200,  h:20},
+      {x:1000, y:175, w:200,  h:20},
+      {x:1280, y:230, w:200,  h:20},
+      {x:1560, y:285, w:200,  h:20},
+      {x:1840, y:340, w:400,  h:60},
+      {x:2320, y:200, w:260,  h:20},
+      {x:2660, y:285, w:200,  h:20},
+      {x:2930, y:340, w:470,  h:60},
+    ],
+    enemies: [
+      {type:'creep', x:500,  speed:1.43, platX:440,  platW:200},
+      {type:'creep', x:3000, speed:1.5,  platX:2930, platW:470},
+      {type:'email', x:2380, speed:2.0, platX:2320, platW:260},
+    ]
+  },
+  {
+    name: "The Lobby",
+    floorLabel: "The Lobby",
+    bg: '#f5f0e8', ground: '#5c4a1e', accent: '#c9a84c',
+    diskCount: 12,
+    crawlSections: [
+      {x:700,  w:160, floorY:340},  // ends at x:860, leaving 40px standing room before platform edge x:900
+      {x:2660, w:140, floorY:340},  // ends at x:2800, leaving 60px standing room before platform edge x:2860
+    ],
+    floorSpikes: [ {x:1570, platY:340} ],  // on mid ground chunk {x:1500,w:300}, clear run to right edge
+    platforms: [
+      {x:0,    y:340, w:320,  h:60},
+      {x:400,  y:270, w:160,  h:18},
+      {x:640,  y:340, w:260,  h:60},
+      {x:940,  y:265, w:180,  h:18},
+      {x:1240, y:295, w:180,  h:18},
+      {x:1500, y:340, w:300,  h:60},
+      {x:1880, y:240, w:160,  h:18},
+      {x:2120, y:175, w:160,  h:18},
+      {x:2360, y:240, w:160,  h:18},
+      {x:2600, y:340, w:260,  h:60},
+      {x:2940, y:270, w:200,  h:18},
+      {x:3200, y:330, w:260,  h:70},
+    ],
+    enemies: [
+      {type:'creep',     x:3250, speed:1.58, platX:3200, platW:260},
+      {type:'email',     x:1520, speed:2.2, platX:1500, platW:300},
+      {type:'timesheet', x:3000, speed:3.0, platX:2940, platW:200},
+      {type:'timesheet', x:3220, speed:2.6, platX:3200, platW:260},
+    ]
+  }
+];
+
+/* ════════════════════════════════════════════
+   ENGINE
+   ════════════════════════════════════════════ */
+const canvas  = document.getElementById('c');
+const ctx     = canvas.getContext('2d');
+const W = 800, H = 460;
+canvas.width = W; canvas.height = H;
+
+// ── VIEWPORT SCALING: scale #wrap to fill the window ──
+const wrap = document.getElementById('wrap');
+// Set size first so scaleToFit can measure correctly
+wrap.style.width  = W + 'px';
+wrap.style.height = H + 'px';
+
+function scaleToFit() {
+  const totalW = W + 12; // 6px border each side
+  const totalH = H + 12;
+  const scale = Math.min(window.innerWidth / totalW, window.innerHeight / totalH) * 0.98;
+  // translate(-50%,-50%) centres the element on the absolute top:50% left:50% anchor
+  wrap.style.transform = `translate(-50%, -50%) scale(${scale})`;
+  wrap.style.setProperty('--scale', scale);
+}
+scaleToFit();
+window.addEventListener('resize', scaleToFit);
+
+let running = false, lvlIdx = 0, score = 0, totalScore = 0, camX = 0, frame = 0;
+let lives = 8, invincible = 0, shakeFrames = 0, cheatInvincible = false;
+let particles = [];   // [{x,y,vx,vy,life,maxLife,color,type}]
+let footTimer = 0;
+let wasOnGround = false;
+
+const GRAVITY   = 0.65;
+const JUMP_FORCE = -15;
+const SPD       = 5.5;
+const PORTAL_X  = WORLD_W - 160;
+const PORTAL_Y  = 240;
+const PORTAL_W  = 80;
+const PORTAL_H  = 100;
+
+const player = {x:80, y:200, w:32, h:52, vx:0, vy:0, onGround:false};
+let enemies = [], disks = [], diskTarget = 0;
+
+/* ── ITEM PLACEMENT ── spawn on each platform (not first) */
+function spawnDisks(lvl) {
+  disks = [];
+  const plats = lvl.platforms.slice(1); // skip starting platform
+  const perPlat = Math.ceil(lvl.diskCount / plats.length);
+  let placed = 0;
+  plats.forEach(p => {
+    const count = Math.min(perPlat, lvl.diskCount - placed);
+    for (let i = 0; i < count; i++) {
+      const margin = 30;
+      const segment = (p.w - margin*2) / count;
+      disks.push({
+        x: p.x + margin + segment * i + segment * 0.3,
+        y: p.y - 48,
+        collected: false
+      });
+      placed++;
+    }
+  });
+}
+
+function setupLevel(idx) {
+  const lvl = LEVELS[idx];
+  player.x = 80; player.y = 200; player.vx = 0; player.vy = 0; player.onGround = false;
+  camX = 0; frame = 0; score = 0;
+  invincible = 0; particles = []; footTimer = 0; wasOnGround = false;
+  diskTarget = lvl.diskCount;
+
+  enemies = lvl.enemies.map(e => {
+    // Find the platform this enemy belongs to
+    const plat = lvl.platforms.find(p => p.x === e.platX && p.w === e.platW) ||
+                 lvl.platforms.find(p => e.x >= p.x && e.x <= p.x + p.w);
+    const platY = plat ? plat.y : 340;
+    const enemyH = e.type === 'timesheet' ? 36 : e.type === 'email' ? 24 : 30;
+    // Clamp startX inside platform bounds with a margin
+    const margin = 10;
+    const clampedX = Math.max(e.platX + margin, Math.min(e.x, e.platX + e.platW - 40 - margin));
+    return {
+      ...e,
+      x: clampedX,
+      y: platY - enemyH,
+      baseY: platY - enemyH,   // used by emails to fly above, spiders to jump from
+      vx: -e.speed,
+      jumpVy: 0,               // spider jump velocity
+      jumpTimer: Math.floor(Math.random() * 120), // stagger spider jumps
+      // Patrol bounds strictly inside platform
+      minX: e.platX + margin,
+      maxX: e.platX + e.platW - 40 - margin,
+    };
+  });
+
+  spawnDisks(lvl);
+
+  // Post-process: move any disk that overlaps a floor spike zone to just before the spikes, higher up
+  if (lvl.floorSpikes) {
+    const FSW = 14, GAP = 4, COUNT = 3;
+    const groupW = COUNT * FSW + (COUNT-1) * GAP; // 50px
+    lvl.floorSpikes.forEach(fs => {
+      disks.forEach(d => {
+        if (!d.collected && d.x + 24 > fs.x - 20 && d.x < fs.x + groupW + 20) {
+          // Move disk to just before the spikes, raised so player grabs it mid-jump
+          d.x = fs.x - 40;
+          d.y = fs.platY - 80; // higher than normal so it's grabbed while jumping
+        }
+      });
+    });
+  }
+  updateHUD();
+}
+
+function updateHUD() {
+  // HUD drawn directly on canvas each frame — see drawHUD() called in gameLoop
+}
+
+function drawHUD() {
+  const pad = 10, rowH = 22, boxW = 180;
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillRect(pad, pad, boxW, rowH * 3 + 8);
+
+  ctx.font = "7px 'Press Start 2P'";
+  ctx.textAlign = 'left';
+
+  // Row 1: Level
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('LEVEL:', pad + 8, pad + 16);
+  ctx.fillStyle = '#facc15';
+  ctx.fillText(LEVELS[lvlIdx].floorLabel, pad + 60, pad + 16);
+
+  // Row 2: Lives
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('LIVES:', pad + 8, pad + 16 + rowH);
+  const maxLives = 3;
+  ctx.font = "10px sans-serif";
+  ctx.fillText('❤️'.repeat(lives) + '🖤'.repeat(Math.max(0, maxLives - lives)), pad + 55, pad + 18 + rowH);
+
+  // Row 3: Disks
+  ctx.font = "7px 'Press Start 2P'";
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('DISKS:', pad + 8, pad + 16 + rowH * 2);
+  ctx.fillStyle = '#4ade80';
+  ctx.fillText(score + ' / ' + diskTarget, pad + 60, pad + 16 + rowH * 2);
+
+  // Cheat indicator
+  if (cheatInvincible) {
+    ctx.font = "7px 'Press Start 2P'";
+    ctx.fillStyle = '#facc15';
+    ctx.textAlign = 'right';
+    ctx.fillText('★ INVINCIBLE', W - pad - 8, pad + 16);
+    ctx.textAlign = 'left';
+  }
+}
+
+/* ── COLLISION ── precise AABB landing from above */
+function resolvePlayer(plats) {
+  player.onGround = false;
+  plats.forEach(p => {
+    const overlapX = player.x + player.w > p.x && player.x < p.x + p.w;
+    const overlapY = player.y + player.h > p.y && player.y + player.h < p.y + p.h + player.vy + 2;
+    const wasAbove  = (player.y + player.h - player.vy) <= p.y + 2;
+    if (overlapX && overlapY && wasAbove && player.vy >= 0) {
+      player.y = p.y - player.h;
+      player.vy = 0;
+      player.onGround = true;
+    }
+  });
+}
+
+/* ── INPUT ── */
+const keys = {};
+window.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (e.code === 'ArrowDown' || e.code === 'KeyS') isDucking = true;
+  e.preventDefault();
+
+  // ── CHEAT KEYS (only while game is running) ──
+  if (running) {
+    if (e.code === 'Digit1') { lvlIdx = 0; setupLevel(0); }
+    if (e.code === 'Digit2') { lvlIdx = 1; setupLevel(1); }
+    if (e.code === 'Digit3') { lvlIdx = 2; setupLevel(2); }
+    if (e.code === 'KeyT')   { cheatInvincible = !cheatInvincible; }
+  }
+}, {passive:false});
+window.addEventListener('keyup', e => {
+  keys[e.code] = false;
+  if (e.code === 'ArrowDown' || e.code === 'KeyS') isDucking = false;
+});
+
+// Touch
+const tc = {left:false, right:false, jump:false};
+function bindTouch(id, prop) {
+  const el = document.getElementById(id);
+  el.addEventListener('touchstart', e => { tc[prop]=true; e.preventDefault(); }, {passive:false});
+  el.addEventListener('touchend',   e => { tc[prop]=false; e.preventDefault(); }, {passive:false});
+}
+bindTouch('tc-left', 'left'); bindTouch('tc-right', 'right'); bindTouch('tc-jump', 'jump');
+
+function inputLeft()  { return keys['ArrowLeft']  || keys['KeyA'] || tc.left;  }
+function inputRight() { return keys['ArrowRight'] || keys['KeyD'] || tc.right; }
+function inputJump()  { return keys['ArrowUp'] || keys['Space'] || keys['KeyW'] || tc.jump; }
+
+let jumpHeld = false, isDucking = false, inTunnel = false;
+
+/* ── PARTICLES ── */
+function spawnDust(x, y) {
+  for (let i = 0; i < 6; i++) {
+    particles.push({
+      x: x + Math.random()*20 - 10, y,
+      vx: (Math.random()-0.5)*2, vy: -Math.random()*2 - 0.5,
+      life: 18, maxLife: 18, color: '#94a3b8', type:'dust'
+    });
+  }
+}
+function spawnSparkle(x, y) {
+  const colors = ['#facc15','#fde68a','#ffffff','#4ade80'];
+  for (let i = 0; i < 10; i++) {
+    const a = (i/10)*Math.PI*2, spd = Math.random()*3+1;
+    particles.push({
+      x: x+12, y: y+12,
+      vx: Math.cos(a)*spd, vy: Math.sin(a)*spd - 1,
+      life: 22, maxLife: 22, color: colors[i%colors.length], type:'star'
+    });
+  }
+}
+function updateParticles() {
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => { p.x+=p.vx; p.y+=p.vy; p.vy+=0.1; p.life--; });
+}
+function drawParticles(ctx, camX) {
+  particles.forEach(p => {
+    const alpha = p.life / p.maxLife;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = p.color;
+    if (p.type === 'star') {
+      ctx.save();
+      ctx.translate(p.x - camX, p.y);
+      ctx.rotate(p.life * 0.3);
+      ctx.fillRect(-3, -1, 6, 2); ctx.fillRect(-1, -3, 2, 6);
+      ctx.restore();
+    } else {
+      ctx.fillRect(p.x - camX - 2, p.y - 2, 4, 4);
+    }
+    ctx.globalAlpha = 1;
+  });
+}
+
+/* ── SCREEN SHAKE ── */
+function triggerShake() {
+  shakeFrames = 12;
+  document.getElementById('wrap').classList.add('shake');
+  setTimeout(()=>document.getElementById('wrap').classList.remove('shake'), 350);
+}
+
+/* ── WIN SCREEN: animated waving Joe ── */
+let winAnimFrame = 0;
+function animateWinScreen() {
+  const wc = document.getElementById('win-canvas');
+  if (!wc || document.getElementById('scr-win').classList.contains('hidden')) return;
+  const wctx = wc.getContext('2d');
+  wctx.clearRect(0, 0, 320, 120);
+  winAnimFrame++;
+
+  // Ground line
+  wctx.fillStyle = '#4ade80'; wctx.fillRect(0, 100, 320, 4);
+
+  // Joe: jx=14, jy=42. Feet at jy+52=94, close to ground at 100.
+  const jx = 14, jy = 42;
+
+  drawJoe(wctx, jx, jy, winAnimFrame, 0, true, false);
+
+  // The static right arm drawn by drawJoe is at jx+32, jy+(4 to 22).
+  // Overpaint it with the canvas bg colour then redraw only the waving version.
+  // Use the actual overlay bg colour so it blends cleanly.
+  wctx.fillStyle = 'rgba(5,5,20,0.92)';
+  wctx.fillRect(jx + 31, jy + 2, 7, 24);
+
+  // Waving right arm
+  const wave = Math.sin(winAnimFrame * 0.18) * 18;
+  wctx.fillStyle = '#1c1c2a';
+  wctx.fillRect(jx + 32, jy + 4 - wave, 4, 14);
+  wctx.fillStyle = '#f5c8a0';
+  wctx.fillRect(jx + 32, jy + 16 - wave, 4, 6);
+
+  // Speech bubble — to the right of Joe, tail points to his face (jy+8 = mouth level)
+  const faceY = jy + 8;  // approx mouth/face centre
+  const bx = 72, by = 4, bw = 238, bh = 44;
+  wctx.fillStyle = '#fff'; wctx.strokeStyle = '#facc15'; wctx.lineWidth = 2;
+  wctx.beginPath(); wctx.roundRect(bx, by, bw, bh, 8); wctx.fill(); wctx.stroke();
+
+  // Tail: small triangle pointing LEFT from bubble bottom-left toward Joe's face
+  const tailTipX = jx + 38, tailTipY = faceY;  // tip at face level
+  const tailBase1X = bx + 4,  tailBase1Y = by + bh - 8;
+  const tailBase2X = bx + 18, tailBase2Y = by + bh - 8;
+  wctx.fillStyle = '#fff';
+  wctx.beginPath();
+  wctx.moveTo(tailBase1X, tailBase1Y);
+  wctx.lineTo(tailTipX, tailTipY);
+  wctx.lineTo(tailBase2X, tailBase2Y);
+  wctx.closePath(); wctx.fill();
+  // Tail outline (only the two sides going to tip, not the base)
+  wctx.strokeStyle = '#facc15'; wctx.lineWidth = 2;
+  wctx.beginPath(); wctx.moveTo(tailBase1X, tailBase1Y); wctx.lineTo(tailTipX, tailTipY); wctx.stroke();
+  wctx.beginPath(); wctx.moveTo(tailBase2X, tailBase2Y); wctx.lineTo(tailTipX, tailTipY); wctx.stroke();
+
+  // Text inside bubble
+  wctx.fillStyle = '#1e293b'; wctx.font = "7px 'Press Start 2P'";
+  wctx.textAlign = 'center';
+  wctx.fillText("See ya, folks! 👋", bx + bw/2, by + 18);
+  wctx.fillText("It's been a blast!", bx + bw/2, by + 36);
+  wctx.textAlign = 'left';
+
+  requestAnimationFrame(animateWinScreen);
+}
+
+/* ── MAIN LOOP ── */
+function gameLoop() {
+  if (!running) return;
+  frame++;
+  if (invincible > 0) invincible--;
+
+  // Duck: isDucking set/cleared by keydown/keyup events — just apply it.
+  // Check if Joe is physically inside a crawl tunnel
+  const curLvl = LEVELS[lvlIdx];
+  inTunnel = !!(curLvl.crawlSections && curLvl.crawlSections.some(cs =>
+    player.x + player.w > cs.x && player.x < cs.x + cs.w && player.onGround
+  ));
+  // While in tunnel: force crouch. On exit: respect key state (isDucking from keyup).
+  const effectiveDuck = isDucking || inTunnel;
+
+  const prevH = player.h;
+  player.h = effectiveDuck ? 30 : 52;
+  if (player.h !== prevH) player.y += prevH - player.h;
+
+  if (inputRight()) player.vx = effectiveDuck ? SPD * 0.4 : SPD;
+  else if (inputLeft()) player.vx = effectiveDuck ? -SPD * 0.4 : -SPD;
+  else player.vx = 0;
+
+  const wantsJump = inputJump();
+  if (wantsJump && !jumpHeld && player.onGround) {
+    player.vy = JUMP_FORCE; player.onGround = false; sfxJump();
+  }
+  jumpHeld = wantsJump;
+
+  const prevOnGround = player.onGround;
+  player.vy += GRAVITY;
+  player.x += player.vx;
+  player.y += player.vy;
+  player.x = Math.max(0, Math.min(player.x, WORLD_W - player.w));
+  resolvePlayer(LEVELS[lvlIdx].platforms);
+
+  if (curLvl.crawlSections) {
+    curLvl.crawlSections.forEach(cs => {
+      const inCrawl = player.x + player.w > cs.x && player.x < cs.x + cs.w && player.onGround;
+      if (inCrawl && !effectiveDuck) {
+        const midPlayer = player.x + player.w / 2;
+        const midSection = cs.x + cs.w / 2;
+        if (midPlayer < midSection) {
+          player.x = cs.x - player.w;
+        } else {
+          player.x = cs.x + cs.w;
+        }
+        player.vx = 0;
+      }
+    });
+  }
+
+  // Landing dust
+  if (!prevOnGround && player.onGround && player.vy > 3) {
+    spawnDust(player.x, player.y + player.h);
+    tone(90,'triangle',0.05,0.06);
+  }
+
+  // Footstep sound
+  if (player.onGround && player.vx !== 0) {
+    footTimer--;
+    if (footTimer <= 0) { sfxFootstep(); footTimer = 14; }
+  } else { footTimer = 0; }
+
+  // Fell off bottom
+  if (player.y > H + 80) {
+    takeHit("JOE FELL OUT OF THE BUILDING!");
+    if (!running) return; // only stop loop if game over (lives=0)
+    // otherwise loop continues with respawned position
+  }
+
+  // Camera
+  const targetCam = player.x - W * 0.38;
+  camX += (targetCam - camX) * 0.12;
+  camX = Math.max(0, Math.min(camX, WORLD_W - W));
+
+  // Enemies
+  enemies.forEach(en => {
+    en.x += en.vx;
+    if (en.x <= en.minX) { en.x = en.minX; en.vx = Math.abs(en.vx); }
+    if (en.x >= en.maxX) { en.x = en.maxX; en.vx = -Math.abs(en.vx); }
+
+    // Email flies high — Joe must duck under it. Top at platY-56, bottom at platY-32.
+    // Standing Joe head=platY-52: email bottom(platY-32) is BELOW head → HIT.
+    // Ducked Joe top=platY-30: email bottom(platY-32) is ABOVE top → CLEAR.
+    if (en.type === 'email') {
+      en.y = en.baseY - 40 + Math.sin(frame * 0.045) * 5;
+    }
+
+    // Spider: periodic jump
+    if (en.type === 'creep') {
+      en.jumpTimer--;
+      if (en.jumpTimer <= 0 && en.jumpVy === 0) {
+        if (en.jumpTimer < -40) { en.jumpVy = -7; en.jumpTimer = 140 + Math.floor(Math.random()*80); }
+      }
+      if (en.jumpVy !== 0) {
+        en.y += en.jumpVy; en.jumpVy += 0.55;
+        if (en.y >= en.baseY) { en.y = en.baseY; en.jumpVy = 0; }
+      }
+    }
+
+    // Proximity SFX (only if on screen)
+    const screenDist = Math.abs((en.x - camX) - W/2);
+    if (screenDist < 180 && frame % 30 === 0) {
+      if (en.type === 'email') sfxEmailNear();
+      if (en.type === 'timesheet' && frame % 60 === 0) sfxClockNear();
+    }
+
+    // Hit detection — proper AABB box overlap, skip if invincible
+    if (invincible > 0 || cheatInvincible) return;
+    // Email sprite: 36×24. Spider: 40×28. Clock: 32×46 (incl legs).
+    const eW = en.type === 'email' ? 36 : en.type === 'timesheet' ? 32 : 40;
+    const eH = en.type === 'email' ? 24 : en.type === 'timesheet' ? 46 : 28;
+    const overlapX = player.x + player.w > en.x + 4 && player.x < en.x + eW - 4;
+    const overlapY = player.y + player.h > en.y + 4 && player.y < en.y + eH - 4;
+    if (overlapX && overlapY) {
+      const msg = en.type === 'timesheet' ? "CAUGHT BY THE OVERDUE CLOCK!"
+                : en.type === 'email'     ? "SWAMPED BY UNREAD EMAILS!"
+                : "SCOPE CREEP CAUGHT YOU!";
+      takeHit(msg); return;
+    }
+  });
+  if (!running) return;
+
+  // Disk collection
+  disks.forEach(d => {
+    if (d.collected) return;
+    const dx = Math.abs(player.x + player.w/2 - (d.x + 12));
+    const dy = Math.abs(player.y + player.h/2 - (d.y + 12));
+    if (dx < 30 && dy < 36) {
+      d.collected = true; score++; totalScore++; sfxCoin();
+      spawnSparkle(d.x, d.y);
+      updateHUD();
+    }
+  });
+
+  updateParticles();
+
+  // Portal
+  const allCollected = score >= diskTarget;
+  if (allCollected) {
+    const px = player.x + player.w/2, py = player.y + player.h;
+    if (px > PORTAL_X && px < PORTAL_X + PORTAL_W && py > PORTAL_Y && py < PORTAL_Y + PORTAL_H + 40) {
+      running = false;
+      if (lvlIdx < LEVELS.length - 1) {
+        sfxLevelEnd();
+        const flavours = [
+          "Joe survived the emails...\nbut the Meeting Room awaits.\nStay sharp — the agenda\nis dangerously vague.",
+          "One more floor to go.\nThe Lobby is in sight.\nDon't let the timesheets\ncatch you now!"
+        ];
+        document.getElementById('inter-title').textContent = LEVELS[lvlIdx].name + ' CLEARED!';
+        document.getElementById('inter-flavour').innerText = flavours[lvlIdx] || '';
+        document.getElementById('inter-text').textContent = '→ Next up: ' + LEVELS[lvlIdx+1].name;
+        document.getElementById('scr-inter').classList.remove('hidden');
+      } else {
+        sfxWin(); stopMusic();
+        const maxDisks = LEVELS.reduce((s,l)=>s+l.diskCount,0);
+        document.getElementById('win-score').textContent =
+          `DISKS ARCHIVED: ${totalScore} / ${maxDisks}`;
+        document.getElementById('scr-win').classList.remove('hidden');
+        requestAnimationFrame(animateWinScreen);
+      }
+      return;
+    }
+  }
+
+  /* ── DRAW ── */
+  const lvl = LEVELS[lvlIdx];
+  ctx.fillStyle = lvl.bg;
+  ctx.fillRect(0, 0, W, H);
+  drawBG(ctx, lvlIdx, camX, W, H);
+
+  ctx.save();
+  ctx.translate(-camX, 0);
+
+  lvl.platforms.forEach(p => {
+    ctx.fillStyle = lvl.ground; ctx.fillRect(p.x, p.y, p.w, p.h);
+    ctx.fillStyle = lvl.accent; ctx.fillRect(p.x, p.y, p.w, 8);
+    ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fillRect(p.x, p.y, p.w, 3);
+  });
+
+  // Draw crawl section ceilings — low overhead bars Joe must duck under
+  const CRAWL_GAP = 34; // gap clears duck (h=30) but not stand (h=52)
+  if (lvl.crawlSections) {
+    lvl.crawlSections.forEach(cs => {
+      const ceilY = cs.floorY - CRAWL_GAP;
+      const blockTop = ceilY - 20;
+      // Ceiling block
+      ctx.fillStyle = lvl.ground;
+      ctx.fillRect(cs.x, blockTop, cs.w, 20);
+      ctx.fillStyle = lvl.accent;
+      ctx.fillRect(cs.x, blockTop, cs.w, 8);
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.fillRect(cs.x, blockTop, cs.w, 3);
+      // Warning stripes on ceiling underside
+      ctx.fillStyle = 'rgba(250,204,21,0.45)';
+      for (let i = 0; i < cs.w; i += 20) {
+        ctx.fillRect(cs.x + i, ceilY - 5, 10, 5);
+      }
+      // Spikes on TOP of the ceiling block — triangles pointing upward
+      const spikeW = 14, spikeH = 14, spikeTop = blockTop - spikeH;
+      ctx.fillStyle = '#dc2626';
+      for (let sx = cs.x + 4; sx < cs.x + cs.w - spikeW; sx += spikeW + 4) {
+        ctx.beginPath();
+        ctx.moveTo(sx, blockTop);
+        ctx.lineTo(sx + spikeW / 2, spikeTop);
+        ctx.lineTo(sx + spikeW, blockTop);
+        ctx.closePath(); ctx.fill();
+        // Highlight
+        ctx.fillStyle = '#f87171';
+        ctx.beginPath();
+        ctx.moveTo(sx + spikeW / 2 - 2, blockTop - 2);
+        ctx.lineTo(sx + spikeW / 2, spikeTop + 2);
+        ctx.lineTo(sx + spikeW / 2 + 2, blockTop - 2);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#dc2626';
+      }
+
+      // Spike collision: if Joe lands on top of the ceiling block, take a hit
+      const onSpikes = player.x + player.w > cs.x + 4 &&
+                       player.x < cs.x + cs.w - 4 &&
+                       player.y + player.h > spikeTop &&
+                       player.y + player.h < blockTop + 8 &&
+                       player.vy >= 0;
+      if (onSpikes && invincible === 0 && !cheatInvincible) {
+        takeHit("SPIKED! SHOULD HAVE CRAWLED THROUGH!");
+      }
+    });
+  }
+
+  // Draw floor spikes — 3 upward spikes on the platform surface to teach jumping
+  if (lvl.floorSpikes) {
+    const FSW = 14, FSH = 16;
+    const COUNT = 3, GAP = 4;
+    lvl.floorSpikes.forEach(fs => {
+      const baseY = fs.platY;
+      const groupW = COUNT * FSW + (COUNT - 1) * GAP;
+      for (let i = 0; i < COUNT; i++) {
+        const sx = fs.x + i * (FSW + GAP);
+        const tipY = baseY - FSH;
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.moveTo(sx, baseY);
+        ctx.lineTo(sx + FSW/2, tipY);
+        ctx.lineTo(sx + FSW, baseY);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#f87171';
+        ctx.beginPath();
+        ctx.moveTo(sx + FSW/2 - 2, baseY - 3);
+        ctx.lineTo(sx + FSW/2, tipY + 3);
+        ctx.lineTo(sx + FSW/2 + 2, baseY - 3);
+        ctx.closePath(); ctx.fill();
+      }
+      // Collision
+      const tipY = fs.platY - FSH;
+      const spikeRight = fs.x + groupW;
+      const onSpike = player.x + player.w > fs.x &&
+                      player.x < spikeRight &&
+                      player.y + player.h >= tipY &&
+                      player.y + player.h <= fs.platY + 4 &&
+                      player.vy >= 0;
+      if (onSpike && invincible === 0 && !cheatInvincible) {
+        takeHit("OUCH! WATCH OUT FOR THE SPIKES!");
+      }
+    });
+  }
+
+  disks.forEach(d => { if (!d.collected) drawDisk(ctx, d.x, d.y, frame); });
+  drawPortal(ctx, PORTAL_X, PORTAL_Y, PORTAL_W, PORTAL_H, frame, !allCollected);
+  enemies.forEach(en => drawEnemy(ctx, en.x, en.y, en.type, frame));
+
+  // Joe — flash when invincible
+  if (invincible === 0 || Math.floor(invincible / 4) % 2 === 0) {
+    drawJoe(ctx, player.x, player.y, frame, player.vx, player.onGround, effectiveDuck);
+  }
+
+  ctx.restore();
+
+  // Particles (in screen space)
+  drawParticles(ctx, camX);
+
+  // HUD — drawn on top of everything
+  drawHUD();
+
+  requestAnimationFrame(gameLoop);
+}
+
+function takeHit(msg) {
+  lives--;
+  sfxHit();
+  triggerShake();
+  if (lives <= 0) {
+    running = false;
+    document.getElementById('fail-msg').textContent = msg;
+    document.getElementById('lose-lives').textContent = 'OUT OF LIVES — GAME OVER!';
+    document.getElementById('scr-lose').classList.remove('hidden');
+  } else {
+    // Respawn at level start, reset all movement state
+    player.x = 80; player.y = 200; player.vx = 0; player.vy = 0;
+    player.h = 52; player.onGround = false;
+    isDucking = false; inTunnel = false;
+    invincible = 120;
+  }
+}
+
+function startGame() {
+  if (AC.state === 'suspended') AC.resume();
+  document.getElementById('scr-start').classList.add('hidden');
+  running = true; lvlIdx = 0; lives = 8; totalScore = 0;
+  isDucking = false;
+  setupLevel(0);
+  startMusic();
+  requestAnimationFrame(gameLoop);
+}
+
+function nextLevel() {
+  document.getElementById('scr-inter').classList.add('hidden');
+  lvlIdx++;
+  setupLevel(lvlIdx);
+  running = true;
+  requestAnimationFrame(gameLoop);
+}
+
+function retryLevel() {
+  document.getElementById('scr-lose').classList.add('hidden');
+  lives = 8; totalScore = 0; lvlIdx = 0;
+  setupLevel(0);
+  updateHUD();
+  running = true;
+  requestAnimationFrame(gameLoop);
+}
+
+document.getElementById('btn-start').onclick = startGame;
+document.getElementById('btn-next').onclick  = nextLevel;
+document.getElementById('btn-retry').onclick  = retryLevel;
+
+/* ── ENEMY SHOWCASE on start screen ── */
+(function renderShowcase() {
+  const sc = document.getElementById('enemy-showcase');
+  if (!sc) return;
+  const sctx = sc.getContext('2d');
+  // Canvas: 720×120. Three slots of 240px, centres at 120, 360, 600.
+  // Draw at 2× by using ctx.scale(2,2) — sprites drawn at half coords.
+  let f = 0;
+
+  function animateShowcase() {
+    sctx.clearRect(0, 0, 720, 120);
+    f++;
+
+    // Draw each slot at 2× scale using save/restore + translate+scale
+    // Slot 1: Spider — centre x=120
+    sctx.save();
+    sctx.scale(2, 2);
+    // In 2× space: slot centre = 60, spider cx = 60-20 = 40, cy = 44 → legs reach 72 within 90px half-height
+    drawSpider(sctx, 40, 22, f);
+    sctx.restore();
+
+    // Slot 2: Email — centre x=360
+    sctx.save();
+    sctx.translate(240, 0);
+    sctx.scale(2, 2);
+    // In 2× space: slot centre = 60. Email 36px wide → x=60-18=42, y=28 → centre at 40
+    drawEnemy(sctx, 42, 28, 'email', f);
+    sctx.restore();
+
+    // Slot 3: Clock — centre x=600
+    sctx.save();
+    sctx.translate(480, 0);
+    sctx.scale(2, 2);
+    // drawClock cx,cy: sprite ~32px wide → cx=60-16=44, cy=10
+    drawClock(sctx, 44, 10, f);
+    sctx.restore();
+
+    if (!document.getElementById('scr-start').classList.contains('hidden')) {
+      requestAnimationFrame(animateShowcase);
+    }
+  }
+  requestAnimationFrame(animateShowcase);
+})();
+</script>
+</body>
+</html>
