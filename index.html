@@ -179,6 +179,7 @@ h2 { font-size: 15px; color: #4ade80; margin-bottom: 14px;
     <div class="left-btns">
       <div class="tc-btn" id="tc-left">◀</div>
       <div class="tc-btn" id="tc-right">▶</div>
+      <div class="tc-btn" id="tc-duck" style="font-size:0.8rem;">▼</div>
     </div>
     <div class="tc-btn" id="tc-jump">▲</div>
   </div>
@@ -358,7 +359,7 @@ const sfxClockNear = () => { tone(800,'square',0.05,0.03); };
 /* ════════════════════════════════════════════
    PIXEL SPRITES
    ════════════════════════════════════════════ */
-function drawJoe(ctx, x, y, frame, vx, onGround, ducking) {
+function drawJoe(ctx, x, y, frame, vx, onGround, ducking, waving) {
   const s = 4;
 
   if (ducking) {
@@ -472,29 +473,28 @@ function drawJoe(ctx, x, y, frame, vx, onGround, ducking) {
   // ── ARMS (swing when walking, raise when jumping) ──
   ctx.fillStyle = '#1c1c2a';
   if (!onGround) {
-    // Both arms raised up in a jump pose
     const jumpRaise = 16;
-    // Left arm — raised up and out
     ctx.fillRect(x - s,   y + 4*s - jumpRaise, s, 4*s);
     ctx.fillStyle = '#f5c8a0';
-    ctx.fillRect(x - s,   y + 4*s - jumpRaise - 2*s, s, 2*s); // hand above arm
-    // Right arm — raised up and out
-    ctx.fillStyle = '#1c1c2a';
-    ctx.fillRect(x + 8*s, y + 4*s - jumpRaise, s, 4*s);
-    ctx.fillStyle = '#f5c8a0';
-    ctx.fillRect(x + 8*s, y + 4*s - jumpRaise - 2*s, s, 2*s);
+    ctx.fillRect(x - s,   y + 4*s - jumpRaise - 2*s, s, 2*s);
+    if (!waving) {
+      ctx.fillStyle = '#1c1c2a';
+      ctx.fillRect(x + 8*s, y + 4*s - jumpRaise, s, 4*s);
+      ctx.fillStyle = '#f5c8a0';
+      ctx.fillRect(x + 8*s, y + 4*s - jumpRaise - 2*s, s, 2*s);
+    }
   } else {
-    // Left arm — swings with walk cycle
     const lArmY = armSwing;
     ctx.fillRect(x - s,     y + 4*s + lArmY, s, 4*s);
     ctx.fillStyle = '#f5c8a0';
     ctx.fillRect(x - s,     y + 7*s + lArmY, s, 2*s);
-    // Right arm — swings opposite
-    ctx.fillStyle = '#1c1c2a';
-    const rArmY = -armSwing;
-    ctx.fillRect(x + 8*s,   y + 4*s + rArmY, s, 4*s);
-    ctx.fillStyle = '#f5c8a0';
-    ctx.fillRect(x + 8*s,   y + 7*s + rArmY, s, 2*s);
+    if (!waving) {
+      ctx.fillStyle = '#1c1c2a';
+      const rArmY = -armSwing;
+      ctx.fillRect(x + 8*s,   y + 4*s + rArmY, s, 4*s);
+      ctx.fillStyle = '#f5c8a0';
+      ctx.fillRect(x + 8*s,   y + 7*s + rArmY, s, 2*s);
+    }
   }
   // ── TROUSERS ──
   ctx.fillStyle = '#18181f';
@@ -1084,7 +1084,7 @@ scaleToFit();
 window.addEventListener('resize', scaleToFit);
 
 let running = false, lvlIdx = 0, score = 0, totalScore = 0, camX = 0, frame = 0;
-let lives = 8, invincible = 0, shakeFrames = 0, cheatInvincible = false;
+let lives = 3, invincible = 0, shakeFrames = 0, cheatInvincible = false;
 let particles = [];   // [{x,y,vx,vy,life,maxLife,color,type}]
 let footTimer = 0;
 let wasOnGround = false;
@@ -1256,6 +1256,11 @@ function bindTouch(id, prop) {
 }
 bindTouch('tc-left', 'left'); bindTouch('tc-right', 'right'); bindTouch('tc-jump', 'jump');
 
+// Duck touch button — sets isDucking directly like the keyboard events
+const tcDuck = document.getElementById('tc-duck');
+tcDuck.addEventListener('touchstart', e => { isDucking = true;  e.preventDefault(); }, {passive:false});
+tcDuck.addEventListener('touchend',   e => { isDucking = false; e.preventDefault(); }, {passive:false});
+
 function inputLeft()  { return keys['ArrowLeft']  || keys['KeyA'] || tc.left;  }
 function inputRight() { return keys['ArrowRight'] || keys['KeyD'] || tc.right; }
 function inputJump()  { return keys['ArrowUp'] || keys['Space'] || keys['KeyW'] || tc.jump; }
@@ -1327,20 +1332,15 @@ function animateWinScreen() {
   // Joe: jx=14, jy=42. Feet at jy+52=94, close to ground at 100.
   const jx = 14, jy = 42;
 
-  drawJoe(wctx, jx, jy, winAnimFrame, 0, true, false);
+  // Draw Joe with waving=true so drawJoe skips the right arm entirely
+  drawJoe(wctx, jx, jy, winAnimFrame, 0, true, false, true);
 
-  // The static right arm drawn by drawJoe is at jx+32, jy+(4 to 22).
-  // Overpaint it with the canvas bg colour then redraw only the waving version.
-  // Use the actual overlay bg colour so it blends cleanly.
-  wctx.fillStyle = 'rgba(5,5,20,0.92)';
-  wctx.fillRect(jx + 31, jy + 2, 7, 24);
-
-  // Waving right arm
-  const wave = Math.sin(winAnimFrame * 0.18) * 18;
+  // Draw only the waving right arm
+  const wave = Math.sin(winAnimFrame * 0.07) * 18;
   wctx.fillStyle = '#1c1c2a';
-  wctx.fillRect(jx + 32, jy + 4 - wave, 4, 14);
+  wctx.fillRect(jx + 32, jy + 16 - wave, 4, 14);
   wctx.fillStyle = '#f5c8a0';
-  wctx.fillRect(jx + 32, jy + 16 - wave, 4, 6);
+  wctx.fillRect(jx + 32, jy + 16 - wave - 8, 4, 8);
 
   // Speech bubble — to the right of Joe, tail points to his face (jy+8 = mouth level)
   const faceY = jy + 8;  // approx mouth/face centre
@@ -1681,7 +1681,7 @@ function takeHit(msg) {
 function startGame() {
   if (AC.state === 'suspended') AC.resume();
   document.getElementById('scr-start').classList.add('hidden');
-  running = true; lvlIdx = 0; lives = 8; totalScore = 0;
+  running = true; lvlIdx = 0; lives = 3; totalScore = 0;
   isDucking = false;
   setupLevel(0);
   startMusic();
@@ -1698,7 +1698,7 @@ function nextLevel() {
 
 function retryLevel() {
   document.getElementById('scr-lose').classList.add('hidden');
-  lives = 8; totalScore = 0; lvlIdx = 0;
+  lives = 3; totalScore = 0; lvlIdx = 0;
   setupLevel(0);
   updateHUD();
   running = true;
